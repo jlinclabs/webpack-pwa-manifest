@@ -16,18 +16,21 @@ function sanitizeIcon (iconSnippet) {
   const arr = parseArray(iconSnippet.size || iconSnippet.sizes)
   if (!arr) throw new IconError('Unknown icon sizes.')
   const sizes = []
-  for (let size of arr) sizes.push(+size || parseInt(size))
+  for (let size of arr) {
+    sizes.push(/^\d+x\d+$/.test(size) ? size : (+size || parseInt(size, 10)))
+  }
   return {
     src: iconSnippet.src,
     sizes,
     destination: iconSnippet.destination,
     ios: iconSnippet.ios || false,
-    color: iconSnippet.color
+    color: iconSnippet.color,
+    pixelRatio: iconSnippet.pixelRatio,
   }
 }
 
-function processIcon (currentSize, icon, buffer, mimeType, publicPath, shouldFingerprint) {
-  const dimensions = `${currentSize}x${currentSize}`
+function processIcon (width, height, icon, buffer, mimeType, publicPath, shouldFingerprint) {
+  const dimensions = `${width}x${height}`
   const fileName = shouldFingerprint ? `icon_${dimensions}.${generateFingerprint(buffer)}.${mime.getExtension(mimeType)}` : `icon_${dimensions}.${mime.getExtension(mimeType)}`
   const iconOutputDir = icon.destination ? joinURI(icon.destination, fileName) : fileName
   const iconPublicUrl = joinURI(publicPath, iconOutputDir)
@@ -42,8 +45,8 @@ function processIcon (currentSize, icon, buffer, mimeType, publicPath, shouldFin
       url: iconPublicUrl,
       source: buffer,
       size: buffer.length,
-      ios: icon.ios ? { valid: icon.ios, size: dimensions, href: iconPublicUrl } : false,
-      color: icon.color
+      ios: icon.ios ? { valid: icon.ios, size: dimensions, href: iconPublicUrl, pixelRatio: icon.pixelRatio } : false,
+      color: icon.color,
     }
   }
 }
@@ -61,7 +64,10 @@ function process (sizes, icon, cachedIconsCopy, icons, assets, fingerprint, publ
   }
 
   const size = sizes.pop()
-  if (size > 0) {
+  const [width, height] = /^\d+x\d+$/.test(size)
+    ? size.match(/^(\d+)x(\d+)$/).slice(1, 3).map(x => parseInt(x, 10))
+    : [size, size]
+  if (height > 0 && width > 0) {
     const mimeType = mime.getType(icon.src)
     if (!supportedMimeTypes.includes(mimeType)) {
       let buffer
@@ -70,7 +76,7 @@ function process (sizes, icon, cachedIconsCopy, icons, assets, fingerprint, publ
       } catch (err) {
         throw new IconError(`It was not possible to read '${icon.src}'.`)
       }
-      const processedIcon = processIcon(size, icon, buffer, mimeType, publicPath, fingerprint)
+      const processedIcon = processIcon(width, height, icon, buffer, mimeType, publicPath, fingerprint)
       icons.push(processedIcon.manifestIcon)
       assets.push(processedIcon.webpackAsset)
       return processNext()
@@ -78,14 +84,16 @@ function process (sizes, icon, cachedIconsCopy, icons, assets, fingerprint, publ
 
     jimp.read(icon.src, (err, img) => {
       if (err) throw new IconError(`It was not possible to read '${icon.src}'.`)
-      img.resize(size, size).getBuffer(mimeType, (err, buffer) => {
+      img.resize(width, height).getBuffer(mimeType, (err, buffer) => {
         if (err) throw new IconError(`It was not possible to retrieve buffer of '${icon.src}'.`)
-        const processedIcon = processIcon(size, icon, buffer, mimeType, publicPath, fingerprint)
+        const processedIcon = processIcon(width, height, icon, buffer, mimeType, publicPath, fingerprint)
         icons.push(processedIcon.manifestIcon)
         assets.push(processedIcon.webpackAsset)
         return processNext()
       })
     })
+  } else {
+    return processNext()
   }
 }
 

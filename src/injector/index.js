@@ -113,10 +113,19 @@ export function generateAppleTags (options, assets) {
       for (let asset of assets) {
         if (asset.ios && asset.ios.valid) {
           if (asset.ios.valid === 'startup') {
+            const [width, height] = asset.ios.size.match(/^(\d+)x(\d+)$/).slice(1, 3).map(x => parseInt(x, 10))
+            const pixelRatio = asset.ios.pixelRatio || 2;
+            const orientation = width < height
+              ? 'portrait'
+              : 'landscape'
+            const media = `(device-width: ${Math.floor(width / pixelRatio)}px)` +
+             ` and (device-height: ${Math.floor(height / pixelRatio)}px)` +
+             ` and (-webkit-device-pixel-ratio: ${pixelRatio})` +
+             ` and (orientation: ${orientation})`
             applyTag(tags, 'link', {
               rel: 'apple-touch-startup-image',
-              sizes: asset.ios.size,
-              href: asset.ios.href
+              href: asset.ios.href,
+              media,
             })
           } else {
             applyTag(tags, 'link', {
