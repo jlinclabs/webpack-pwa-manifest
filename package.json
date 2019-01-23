@@ -25,7 +25,8 @@
     "build": "babel src --out-dir dist",
     "clean": "rimraf -rf tests/*/output && rimraf -rf dist",
     "test": "npm run clean && npm run build && node tests/index.js",
-    "test:debug": "npm run clean && npm run build && node --inspect-brk ./tests/index.js"
+    "test:debug": "npm run clean && npm run build && node --inspect-brk ./tests/index.js",
+    "install": "npm run build"
   },
   "author": "Arthur A. Bergamaschi <arthurbergmz@gmail.com>",
   "license": "MIT",
@@ -47,16 +48,16 @@
     "webpack": "^4.1.1",
     "webpack-cli": "^3.1.2"
   },
-  "files": [
-    "dist",
-    "CHANGELOG.md",
-    "index.d.ts",
-    "index.js",
-    "LICENSE",
-    "package-lock.json",
-    "package.json",
-    "README.md"
-  ],
+  // "files": [
+  //   "dist",
+  //   "CHANGELOG.md",
+  //   "index.d.ts",
+  //   "index.js",
+  //   "LICENSE",
+  //   "package-lock.json",
+  //   "package.json",
+  //   "README.md"
+  // ],
   "engines": {
     "node": ">=6.0.0"
   }
